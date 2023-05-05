@@ -1,32 +1,42 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
+	"io"
+	"os"
 )
-
-type Color string
-
-const (
-	ColorBlack  Color = "\u001b[30m"
-	ColorRed          = "\u001b[31m"
-	ColorGreen        = "\u001b[32m"
-	ColorYellow       = "\u001b[33m"
-	ColorBlue         = "\u001b[34m"
-	ColorReset        = "\u001b[0m"
-)
-
-func colorize(color Color, message string) {
-	fmt.Println(string(color), message, string(ColorReset))
-}
 
 func main() {
-	useColor := flag.Bool("color", false, "display colorized output")
+	var count int
+	flag.IntVar(&count, "n", 5, "number of lines to read from the file")
 	flag.Parse()
 
-	if *useColor {
-		colorize(ColorBlue, "Hello, DigitalOcean!")
-		return
+	var in io.Reader
+	if filename := flag.Arg(0); filename != "" {
+		f, err := os.Open(filename)
+		if err != nil {
+			fmt.Println("error opening file: err:", err)
+			os.Exit(1)
+		}
+		defer f.Close()
+
+		in = f
+	} else {
+		in = os.Stdin
 	}
-	fmt.Println("Hello, DigitalOcean!")
+
+	buf := bufio.NewScanner(in)
+
+	for i := 0; i < count; i++ {
+		if !buf.Scan() {
+			break
+		}
+		fmt.Println(buf.Text())
+	}
+
+	if err := buf.Err(); err != nil {
+		fmt.Fprintln(os.Stderr, "error reading: err:", err)
+	}
 }
